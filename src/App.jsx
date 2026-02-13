@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Routes, Route, useNavigate, Navigate } from 'react-router-dom';
 import './App.css';
 import Navbar from './Components/Navbar';
 import Header from './Components/Header';
@@ -8,11 +9,12 @@ import Login from './Components/Login';
 import About from './Components/About';
 import Team from './Components/Team';
 import Contact from './Components/Contact';
+import NotFound from './Components/NotFound';
 
 function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [currentPage, setCurrentPage] = useState('home');
+  const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('token'));
+  const navigate = useNavigate();
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -24,33 +26,19 @@ function App() {
 
   const handleLogin = () => {
     setIsLoggedIn(true);
-    setCurrentPage('home');
+    navigate('/');
   };
 
   const handleLogout = () => {
+    localStorage.removeItem('token');
     setIsLoggedIn(false);
     setIsMenuOpen(false);
-    setCurrentPage('home');
+    navigate('/login');
   };
 
   const handleNavigate = (page) => {
-    setCurrentPage(page);
+    navigate(page === 'home' ? '/' : `/${page}`);
     setIsMenuOpen(false);
-  };
-
-  const renderPage = () => {
-    switch (currentPage) {
-      case 'home':
-        return <Home />;
-      case 'about':
-        return <About />;
-      case 'team':
-        return <Team />;
-      case 'contact':
-        return <Contact />;
-      default:
-        return <Home />;
-    }
   };
 
   return (
@@ -62,16 +50,25 @@ function App() {
             onClose={closeMenu} 
             onLogout={handleLogout} 
             onNavigate={handleNavigate}
-            currentPage={currentPage}
           />
           <Header onToggleMenu={toggleMenu} />
           <main>
-            {renderPage()}
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/team" element={<Team />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/login" element={<Navigate to="/" />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
           </main>
           <Footer />
         </>
       ) : (
-        <Login onLogin={handleLogin} />
+        <Routes>
+          <Route path="/login" element={<Login onLogin={handleLogin} />} />
+          <Route path="*" element={<Navigate to="/login" />} />
+        </Routes>
       )}
     </div>
   );

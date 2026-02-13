@@ -10,24 +10,58 @@ const Login = ({ onLogin }) => {
     username: ''
   });
 
+  const [message, setMessage] = useState('');
+
   const handleToggle = () => {
     setIsLogin(!isLogin);
+    setMessage('');
   };
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Simulate login/registration
-    onLogin();
+    setMessage('');
+
+    const endpoint = isLogin ? '/api/login' : '/api/signup';
+    const payload = isLogin 
+      ? { email: formData.email, password: formData.password }
+      : { username: formData.username, email: formData.email, password: formData.password };
+
+    try {
+      const response = await fetch(`http://localhost:5000${endpoint}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        if (isLogin) {
+          localStorage.setItem('token', data.token);
+          onLogin();
+        } else {
+          setMessage('Registration successful! Please login.');
+          setIsLogin(true);
+        }
+      } else {
+        setMessage(data.message || 'Something went wrong');
+      }
+    } catch (err) {
+      setMessage('Error connecting to the server');
+    }
   };
 
   return (
     <div className="login-container">
       <div className="login-box">
         <h2>{isLogin ? 'Login' : 'Sign Up'}</h2>
+        {message && <p className={message.includes('successful') ? 'success-msg' : 'error-msg'}>{message}</p>}
         <form onSubmit={handleSubmit}>
           {!isLogin && (
             <div className="input-group">
