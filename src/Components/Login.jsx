@@ -44,7 +44,8 @@ const Login = ({ onLogin }) => {
       if (response.ok) {
         if (isLogin) {
           localStorage.setItem('token', data.token);
-          onLogin();
+          localStorage.setItem('user', JSON.stringify(data.user));
+          onLogin(data.user);
         } else {
           setMessage('Registration successful! Please login.');
           setIsLogin(true);

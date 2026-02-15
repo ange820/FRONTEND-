@@ -2,7 +2,7 @@ import React from 'react';
 import { useLocation } from 'react-router-dom';
 import './Navbar.css';
 
-const Navbar = ({ isOpen, onClose, onLogout, onNavigate }) => {
+const Navbar = ({ isOpen, onClose, onLogout, onNavigate, user }) => {
   const location = useLocation();
   const path = location.pathname;
 
@@ -13,6 +13,7 @@ const Navbar = ({ isOpen, onClose, onLogout, onNavigate }) => {
         <li className={path === '/' ? 'active' : ''}>
           <a href="/" onClick={(e) => { e.preventDefault(); onNavigate('home'); }}>Home</a>
         </li>
+
         <li className={path === '/about' ? 'active' : ''}>
           <a href="/about" onClick={(e) => { e.preventDefault(); onNavigate('about'); }}>About</a>
         </li>

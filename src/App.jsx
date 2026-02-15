@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate, Navigate } from 'react-router-dom';
 import './App.css';
 import Navbar from './Components/Navbar';
@@ -9,11 +9,13 @@ import Login from './Components/Login';
 import About from './Components/About';
 import Team from './Components/Team';
 import Contact from './Components/Contact';
+
 import NotFound from './Components/NotFound';
 
 function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('token'));
+  const [user, setUser] = useState(JSON.parse(localStorage.getItem('user')) || null);
   const navigate = useNavigate();
 
   const toggleMenu = () => {
@@ -24,14 +26,17 @@ function App() {
     setIsMenuOpen(false);
   };
 
-  const handleLogin = () => {
+  const handleLogin = (userData) => {
     setIsLoggedIn(true);
+    setUser(userData);
     navigate('/');
   };
 
   const handleLogout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
     setIsLoggedIn(false);
+    setUser(null);
     setIsMenuOpen(false);
     navigate('/login');
   };
@@ -50,6 +55,7 @@ function App() {
             onClose={closeMenu} 
             onLogout={handleLogout} 
             onNavigate={handleNavigate}
+            user={user}
           />
           <Header onToggleMenu={toggleMenu} />
           <main>
@@ -58,6 +64,7 @@ function App() {
               <Route path="/about" element={<About />} />
               <Route path="/team" element={<Team />} />
               <Route path="/contact" element={<Contact />} />
+
               <Route path="/login" element={<Navigate to="/" />} />
               <Route path="*" element={<NotFound />} />
             </Routes>

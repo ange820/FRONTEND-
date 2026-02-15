@@ -22,6 +22,28 @@ const db = mysql.createPool({
   queueLimit: 0
 }).promise();
 
+// Middleware to verify JWT
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) return res.status(401).json({ message: 'No token provided' });
+
+  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+    if (err) return res.status(403).json({ message: 'Invalid token' });
+    req.user = user;
+    next();
+  });
+};
+
+// Middleware to check admin role
+const isAdmin = (req, res, next) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ message: 'Access denied. Admin only.' });
+  }
+  next();
+};
+
 // Signup endpoint
 app.post('/api/signup', async (req, res) => {
   const { username, email, password } = req.body;
@@ -39,11 +61,22 @@ app.post('/api/signup', async (req, res) => {
 
     // Insert user into database
     await db.query(
-      'INSERT INTO users (username, email, password) VALUES (?, ?, ?)',
-      [username, email, hashedPassword]
+      'INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)',
+      [username, email, hashedPassword, 'user']
     );
 
     res.status(201).json({ message: 'User registered successfully' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get all users (Admin only)
+app.get('/api/users', authenticateToken, isAdmin, async (req, res) => {
+  try {
+    const [users] = await db.query('SELECT id, username, email, role, created_at FROM users');
+    res.json(users);
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error' });
@@ -71,7 +104,7 @@ app.post('/api/login', async (req, res) => {
 
     // Create JWT
     const token = jwt.sign(
-      { id: user.id, username: user.username },
+      { id: user.id, username: user.username, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: '1h' }
     );
@@ -81,9 +114,34 @@ app.post('/api/login', async (req, res) => {
       user: {
         id: user.id,
         username: user.username,
-        email: user.email
+        email: user.email,
+        role: user.role
       }
     });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Delete user (Admin only)
+app.delete('/api/users/:id', authenticateToken, isAdmin, async (req, res) => {
+  try {
+    await db.query('DELETE FROM users WHERE id = ?', [req.params.id]);
+    res.json({ message: 'User deleted successfully' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Update user (Admin only)
+app.put('/api/users/:id', authenticateToken, isAdmin, async (req, res) => {
+  const { username, email, role } = req.body;
+  try {
+    await db.query('UPDATE users SET username = ?, email = ?, role = ? WHERE id = ?', 
+      [username, email, role, req.params.id]);
+    res.json({ message: 'User updated successfully' });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error' });
